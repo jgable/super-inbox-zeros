@@ -5,5 +5,11 @@
 }
 
 .Unsplashed-Gallery-Image {
+  background-size: cover;
+  background-repeat: no-repeat;
+  background-position: center center;
+  background-attachment: fixed;
+  height: 100%;
+  position: absolute;
   width: 100%;
 }
