@@ -1,13 +1,13 @@
 /* global fetch, Image */
 
-import React, { Component } from 'react'
+import React, { Component, Fragment } from 'react'
 import { animated, Transition } from 'react-spring'
 
 import './Unsplashed.css'
 
 // Unsplashed has a 50 request limit per hour, lets make 30 to be safe
 // (Not sure if this is per client_id or IP)
-const ROTATE_INTERVAL = 3000 // (1000 * 60) * 2 // 2 mins
+const ROTATE_INTERVAL = 20000 // (1000 * 60) * 2 // 2 mins
 const RANDOM_IMAGE_URL = 'https://api.unsplash.com/photos/random?client_id=6bb5bb78cfde81736048d37f2d3399d5024a6a5be277ad88a4b1a366a5e4f77f'
 const USE_TEST_IMAGES = true
 
@@ -15,12 +15,15 @@ const USE_TEST_IMAGES = true
  * TODO:
  *  - Handle initial load better
  *  - Handle image load errors better
- *  - Show a timer/progress until the next image
  */
 
 export class UnsplashedGallery extends Component {
-  state = {
-    image: null
+  constructor () {
+    super()
+
+    this.state = {
+      image: null
+    }
   }
 
   componentDidMount () {
@@ -28,7 +31,8 @@ export class UnsplashedGallery extends Component {
   }
 
   componentWillUnmount () {
-    clearInterval(this._rotateInterval)
+    // This is gross, but promises aren't cancellable
+    this._unmounted = true
   }
 
   render () {
@@ -36,7 +40,10 @@ export class UnsplashedGallery extends Component {
     return (
       <div className='Unsplashed-Gallery'>
         {image
-          ? <UnsplashedImage image={image} />
+          ? <Fragment>
+            <UnsplashedImage image={image} />
+            <UnsplashedLoadingBar key={image.id} />
+          </Fragment>
           : <h3>Loading...</h3>}
       </div>
     )
@@ -53,23 +60,30 @@ export class UnsplashedGallery extends Component {
           // Download the image
           downloadImage(image),
           // Wait the designated waitTime before continuing
-          waitUntil(waitTime),
+          waitUntil(waitTime)
         ])
       })
       .then((results) => results[0]) // Pass through the image part
       .then((image) => {
+        if (this._unmounted) {
+          return
+        }
+
         this.setState((state) => ({
-          // Never know, we might do something with this later
-          prevImage: state.image,
           image
         }))
-        // Kick off the next fetch and wait, after a small delay to avoid jank
+        // Kick off the next fetch and wait after a small delay to avoid jank
         // during the current transition
         setTimeout(() => {
           this._fetchImages(ROTATE_INTERVAL)
-        }, 1000)
+        }, 2000)
       })
       .catch((err) => {
+        if (this._unmounted) {
+          return
+        }
+
+        this._fetchImages(ROTATE_INTERVAL)
         // TODO: Handle errors: rate limited, no network, etc...
         throw err
       })
@@ -91,6 +105,74 @@ export function UnsplashedImage (props) {
           className='Unsplashed-Gallery-Image'
           style={{
             backgroundImage: `url(${item.urls.full})`,
+            ...props
+          }}
+        />
+      )}
+    </Transition>
+  )
+}
+
+const loadingItems = []
+for (let i = 0; i < 100; i++) {
+  loadingItems.push(i)
+}
+
+/**
+ * A little bar that increments progress percent from 0 to 100.
+ */
+export class UnsplashedLoadingBar extends Component {
+  constructor (props) {
+    super(props)
+
+    this.state = {
+      progress: 0
+    }
+  }
+
+  componentDidMount () {
+    const progressInterval = ROTATE_INTERVAL / 100
+    this._progressInterval = setInterval(() => {
+      // Clear the interval on the last pass
+      if (this.state.progress === 99) {
+        clearInterval(this._progressInterval)
+      }
+      this.setState((state) => ({
+        progress: state.progress + 1
+      }))
+    }, progressInterval)
+  }
+
+  componentWillUnmount () {
+    clearInterval(this._progressInterval)
+  }
+
+  render () {
+    const { progress } = this.state
+    return (
+      <ul className='Unsplashed-Loading-Bar'>
+        <UnsplashedLoadingBarItems items={loadingItems.slice(0, progress)} />
+      </ul>
+    )
+  }
+}
+
+/**
+ * The individual animated blocks that make up the progress bar
+ */
+export function UnsplashedLoadingBarItems (props) {
+  return (
+    <Transition
+      native
+      items={props.items}
+      keys={props.items}
+      from={{ opacity: 0.1, transform: 'translate3d(0,-10px,0)' }}
+      enter={{ opacity: 0.5, transform: 'translate3d(0,0px,0)' }}
+      leave={{ opacity: 0, transform: 'translate3d(0,10px,0)' }}>
+      {item => props => (
+        <animated.li
+          className='Unsplashed-Loading-Bar-Item'
+          style={{
             ...props
           }}
         />
@@ -131,7 +213,7 @@ function downloadImage (image) {
 /**
  * A promise that resolves after a certain duration
  */
-function waitUntil(duration) {
+function waitUntil (duration) {
   return new Promise((resolve, reject) => {
     setTimeout(() => {
       resolve()
