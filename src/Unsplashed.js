@@ -7,7 +7,7 @@ import './Unsplashed.css'
 
 // Unsplashed has a 50 request limit per hour, lets make 30 to be safe
 // (Not sure if this is per client_id or IP)
-const ROTATE_INTERVAL = (1000 * 60) * 2 // 2 mins
+const ROTATE_INTERVAL = 3000 // (1000 * 60) * 2 // 2 mins
 const RANDOM_IMAGE_URL = 'https://api.unsplash.com/photos/random?client_id=6bb5bb78cfde81736048d37f2d3399d5024a6a5be277ad88a4b1a366a5e4f77f'
 const USE_TEST_IMAGES = true
 
@@ -15,22 +15,16 @@ const USE_TEST_IMAGES = true
  * TODO:
  *  - Handle initial load better
  *  - Handle image load errors better
- *  - Show a timer until the next image
- *  - We could be downloading the next image while we wait
+ *  - Show a timer/progress until the next image
  */
 
 export class UnsplashedGallery extends Component {
-  constructor () {
-    super()
-
-    this.state = {
-      image: null
-    }
+  state = {
+    image: null
   }
 
   componentDidMount () {
-    this._fetchImage()
-    this._rotateInterval = setInterval(this._fetchImage.bind(this), ROTATE_INTERVAL)
+    this._fetchImages()
   }
 
   componentWillUnmount () {
@@ -48,18 +42,32 @@ export class UnsplashedGallery extends Component {
     )
   }
 
-  _fetchImage () {
+  _fetchImages (waitTime = 0) {
     const imageLoad = USE_TEST_IMAGES
       ? getTestImage()
       : fetch(RANDOM_IMAGE_URL).then((response) => response.json())
 
     imageLoad
-      .then((image) => downloadImage(image))
+      .then((image) => {
+        return Promise.all([
+          // Download the image
+          downloadImage(image),
+          // Wait the designated waitTime before continuing
+          waitUntil(waitTime),
+        ])
+      })
+      .then((results) => results[0]) // Pass through the image part
       .then((image) => {
         this.setState((state) => ({
+          // Never know, we might do something with this later
           prevImage: state.image,
           image
         }))
+        // Kick off the next fetch and wait, after a small delay to avoid jank
+        // during the current transition
+        setTimeout(() => {
+          this._fetchImages(ROTATE_INTERVAL)
+        }, 1000)
       })
       .catch((err) => {
         // TODO: Handle errors: rate limited, no network, etc...
@@ -117,6 +125,17 @@ function downloadImage (image) {
       reject(image)
     }
     img.src = image.urls.full
+  })
+}
+
+/**
+ * A promise that resolves after a certain duration
+ */
+function waitUntil(duration) {
+  return new Promise((resolve, reject) => {
+    setTimeout(() => {
+      resolve()
+    }, duration)
   })
 }
 
