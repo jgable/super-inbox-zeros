@@ -1,0 +1,9 @@
+.Unsplashed-Gallery {
+  width: 100vw;
+  height: 100vh;
+  overflow: hidden;
+}
+
+.Unsplashed-Gallery-Image {
+  width: 100%;
+}
