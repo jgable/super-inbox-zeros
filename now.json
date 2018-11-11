@@ -1,5 +1,8 @@
 {
   "version": 1,
   "public": true,
-  "type": "docker"
+  "type": "docker",
+  "env": {
+    "BITLY_API_TOKEN": "@super-inbox-bitly-token"
+  }
 }

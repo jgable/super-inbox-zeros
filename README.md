@@ -45,8 +45,18 @@ To learn React, check out the [React documentation](https://reactjs.org/).
 
 ## Deployment
 
-Deployment is setup to use [Now by Zeit](https://zeit.co/now). It has a Docker based Node.js configuration; check out the Dockerfile for details. To deploy I use the following command;
+Deployment is setup to use [Now by Zeit](https://zeit.co/now). Sign up for an account if you want to do your own deployment. It has a Docker based Node.js configuration; check out the Dockerfile for details.
 
-`now -e BITLY_API_TOKEN=[MY_BITLY_API_TOKEN] -e NODE_ENV=production`
+Before deploying, you'll have to add a secret for your bitly token (this is only needed once);
+
+```
+now secret add super-inbox-bitly-token <YOUR_TOKEN>
+```
+
+To deploy I use the following command;
+
+```
+now
+```
 
 Then you can just visit the url provided in the logs.

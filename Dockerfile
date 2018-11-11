@@ -15,6 +15,7 @@ COPY . .
 RUN CI=true npm run test
 
 # Build the app and move the resulting build to the `/public` directory
+ENV NODE_ENV=production
 RUN npm run build
 
 FROM mhart/alpine-node:10 as runner
@@ -22,6 +23,7 @@ FROM mhart/alpine-node:10 as runner
 WORKDIR /usr/src
 
 COPY package.json package-lock.json ./
+ENV NODE_ENV=production
 RUN npm install --only=prod
 
 # Copy all files to the working directory

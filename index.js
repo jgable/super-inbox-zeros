@@ -18,7 +18,7 @@ app.get('/', (req, res) => {
 // Get shortened links from bit.ly through the server to preserve our API key
 app.get('/image_link', (req, res) => {
   if (BITLY_API_TOKEN == null || BITLY_API_TOKEN === '') {
-    return res.status(500, 'Missing Bitly API token')
+    return res.status(500).send('Missing Bitly API token')
   }
 
   getBitlyLink(req.query.url)
@@ -28,14 +28,20 @@ app.get('/image_link', (req, res) => {
       }
 
       // Add a special tag to our links for tracking
-      return addSuperHumanInboxTags(resp);
+      // This has been failing when we call it right after creation, so I'm
+      // going to pause for a second before adding the tags
+      return new Promise((resolve) => {
+        setTimeout(() => {
+          resolve(addSuperHumanInboxTags(resp))
+        }, 1200)
+      })
     })
     .then((resp) => {
       res.json(resp)
     })
     .catch((err) => {
       console.error({err})
-      res.status(500, 'Error: ' + err)
+      res.status(500).send('Error: ' + err)
     })
 })
 
