@@ -33,3 +33,11 @@
   border: solid 1px transparent;
   box-sizing: border-box;
 }
+
+.Unsplashed-QRCode {
+  position: absolute;
+  bottom: 25px;
+  right: 10px;
+  width: 64px;
+  height: 64px;
+}

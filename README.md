@@ -42,3 +42,11 @@ You don’t have to ever use `eject`. The curated feature set is suitable for sm
 You can learn more in the [Create React App documentation](https://facebook.github.io/create-react-app/docs/getting-started).
 
 To learn React, check out the [React documentation](https://reactjs.org/).
+
+## Deployment
+
+Deployment is setup to use [Now by Zeit](https://zeit.co/now). It has a Docker based Node.js configuration; check out the Dockerfile for details. To deploy I use the following command;
+
+`now -e BITLY_API_TOKEN=[MY_BITLY_API_TOKEN] -e NODE_ENV=production`
+
+Then you can just visit the url provided in the logs.

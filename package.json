@@ -3,13 +3,16 @@
   "version": "0.1.0",
   "private": true,
   "dependencies": {
+    "express": "^4.16.4",
+    "qrcode.react": "^0.8.0",
     "react": "^16.6.1",
     "react-dom": "^16.6.1",
-    "react-scripts": "2.1.1",
-    "react-spring": "^6.1.8"
+    "react-spring": "^6.1.8",
+    "request": "^2.88.0",
+    "request-promise": "^4.2.2"
   },
   "scripts": {
-    "start": "react-scripts start",
+    "start": "node index.js",
     "build": "react-scripts build",
     "lint": "standard src/*.js",
     "test": "npm run lint && react-scripts test",
@@ -25,6 +28,7 @@
     "not op_mini all"
   ],
   "devDependencies": {
+    "react-scripts": "2.1.1",
     "standard": "^12.0.1"
   }
 }

@@ -2,19 +2,23 @@
 
 import React, { Component, Fragment } from 'react'
 import { animated, Transition } from 'react-spring'
+import QRCode from 'qrcode.react'
 
 import './Unsplashed.css'
 
 // Unsplashed has a 50 request limit per hour, lets make 30 to be safe
 // (Not sure if this is per client_id or IP)
-const ROTATE_INTERVAL = 20000 // (1000 * 60) * 2 // 2 mins
+const ROTATE_INTERVAL = (1000 * 60) * 2 // 2 mins
 const RANDOM_IMAGE_URL = 'https://api.unsplash.com/photos/random?client_id=6bb5bb78cfde81736048d37f2d3399d5024a6a5be277ad88a4b1a366a5e4f77f'
-const USE_TEST_IMAGES = true
+const USE_TEST_IMAGES = false
 
 /**
  * TODO:
  *  - Handle initial load better
  *  - Handle image load errors better
+ *  - The QR code needs some softening up, maybe a panel with some text under it
+ *  - Get rid of hacky this.unmounted checks by having some kind of event emitter for image and link fetching
+ *  - Add the little black gradients and nice fonts that super human has for their inbox zero experience
  */
 
 export class UnsplashedGallery extends Component {
@@ -42,7 +46,8 @@ export class UnsplashedGallery extends Component {
         {image
           ? <Fragment>
             <UnsplashedImage image={image} />
-            <UnsplashedLoadingBar key={image.id} />
+            <UnsplashedLoadingBar key={`load-${image.id}`} />
+            <UnsplashedQRCode key={`qr-${image.id}`} image={image} />
           </Fragment>
           : <h3>Loading...</h3>}
       </div>
@@ -179,6 +184,73 @@ export function UnsplashedLoadingBarItems (props) {
       )}
     </Transition>
   )
+}
+
+export class UnsplashedQRCode extends Component {
+  constructor (props) {
+    super(props)
+
+    this.state = {
+      link: null
+    }
+  }
+
+  componentDidMount () {
+    const { image } = this.props
+    fetch(`/image_link?url=${encodeURIComponent(image.links.html)}`)
+      .then((r) => r.json())
+      .then((link) => {
+        if (this.unmounted) {
+          return
+        }
+        this.setState((state) => ({
+          link
+        }))
+      })
+      .catch(() => {
+        console.log(`link error; ${image.links.html}`)
+        if (this.unmounted) {
+          return
+        }
+        this.setState((state) => ({
+          error: true
+        }))
+      })
+  }
+
+  componentWillUnmount () {
+    this.unmounted = true
+  }
+
+  render () {
+    const { link } = this.state
+    return (
+      <div className='Unsplashed-QRCode'>
+        {
+          link
+            ? this._renderQRCode()
+            : null
+        }
+      </div>
+    )
+  }
+
+  _renderQRCode () {
+    const { link } = this.state
+    return (
+      <Transition
+        native
+        from={{ opacity: 0 }}
+        enter={{ opacity: 0.8 }}
+        leave={{ opacity: 0 }}>
+        {item => props => (
+          <animated.div style={{ ...props }}>
+            <QRCode size={64} value={link.link} />
+          </animated.div>
+        )}
+      </Transition>
+    )
+  }
 }
 
 /**
